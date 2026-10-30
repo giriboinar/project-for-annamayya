@@ -1,0 +1,50 @@
+name: Build Annamayya video
+
+# Rebuilds both video versions from the committed frames + narration audio,
+# uploads them as artifacts, and verifies the Docker image builds.
+# No push: pushing needs Docker Hub secrets that are intentionally not stored.
+# No cloud deploy here: EKS/AKS steps are docs-only (see deploy/).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-video:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Rebuild English video
+        run: bash scripts/build.sh audio/narration-en.mp3 /tmp/annamayya-en.mp4
+
+      - name: Rebuild Telugu video
+        run: bash scripts/build.sh audio/narration-te.mp3 /tmp/annamayya-te.mp4
+
+      - name: Verify outputs
+        run: |
+          ffprobe -v error -show_entries stream=width,height,codec_name,codec_type -of csv /tmp/annamayya-en.mp4
+          ffprobe -v error -show_entries stream=width,height,codec_name,codec_type -of csv /tmp/annamayya-te.mp4
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v4
+        with:
+          name: annamayya-videos
+          path: |
+            /tmp/annamayya-en.mp4
+            /tmp/annamayya-te.mp4
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build-video
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Build image (no push)
+        run: docker build -t project-for-annamayya:latest .
