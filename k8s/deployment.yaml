@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-for-annamayya
+  labels:
+    app: project-for-annamayya
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: project-for-annamayya
+  template:
+    metadata:
+      labels:
+        app: project-for-annamayya
+    spec:
+      containers:
+        - name: web
+          # Replace with your registry image when you push one, e.g.
+          # image: docker.io/<your-dockerhub-user>/project-for-annamayya:latest
+          image: project-for-annamayya:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
